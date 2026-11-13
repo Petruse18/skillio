@@ -46,12 +46,12 @@ def ecran():
         c.h('<div class="sk-h">Scenariul demo</div>')
         c.h(c.pasi([
             ("Ana descrie problema", "„Curge apă de sub chiuvetă” + poză. Asistentul AI alege instalatorul.", ""),
-            ("Bifează Urgent (+15%)", "Ionel vede solicitarea prima, portocalie, pe hartă.", ""),
+            (f"Bifează Urgent (+{config.PCT_URGENT})", "Ionel vede solicitarea prima, portocalie, pe hartă.", ""),
             ("Ionel trimite oferta", "Preț și oră din calendarul lui.", ""),
             ("Ana compară și acceptă", "Trust Score, insigne Nokia, preț.", ""),
             ("Ora confirmată, Ana plătește", "Banii rămân blocați în SKILLIO.", ""),
             ("Ionel apasă „Am ajuns”", "Rețeaua confirmă sosirea la adresă.", ""),
-            ("Ana confirmă lucrarea", "Banii ajung la Ionel, minus 10% comision.", ""),
+            ("Ana confirmă lucrarea", f"Banii ajung la Ionel, minus {config.PCT_COMISION} comision.", ""),
             ("Recenzie + feedback în timp", "Dă ceasul înainte: 1 zi, 1 săptămână, 1 lună.", ""),
         ]))
         c.h(f'<div class="sk-cap">Ceasul aplicației: {timp.data_ora(timp.acum())}</div>')

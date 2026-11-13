@@ -81,7 +81,7 @@ GHID = {
         ("shield", "Compară meșterii", "Fiecare meșter are un Trust Score 0-100, calculat din lucrări reale: "
                                        "recenzii, punctualitate, cât rezistă lucrările."),
         ("pin", "Trimite solicitarea", "Solicitarea ajunge la meșterii potriviți din zona ta. Bifează Urgent "
-                                       "(+15%) dacă nu poate aștepta."),
+                                       f"(+{config.PCT_URGENT}) dacă nu poate aștepta."),
         ("wallet", "Alege oferta", "Primești oferte cu preț și oră. Alegi una, apoi stabiliți ora împreună."),
         ("lock", "Plătești în siguranță", "Plătești oferta, dar banii rămân blocați în SKILLIO. Meșterul îi "
                                           "primește doar după ce confirmi că lucrarea e în regulă."),
@@ -96,13 +96,13 @@ GHID = {
         ("check", "Adaugă specializările", "Alege meseriile tale. Primești doar solicitările care ți se potrivesc."),
         ("cal", "Setează disponibilitatea", "În calendar blochezi orele în care nu lucrezi. Clienții văd doar orele "
                                             "libere."),
-        ("pin", "Primește solicitări", "Le vezi pe hartă, cu poză, descriere și urgență. Cele urgente (+15%) apar "
+        ("pin", "Primește solicitări", f"Le vezi pe hartă, cu poză, descriere și urgență. Cele urgente (+{config.PCT_URGENT}) apar "
                                        "primele."),
         ("wallet", "Trimite oferte", "Pui un preț și o oră. Dacă clientul acceptă, plătește, iar banii sunt "
                                      "blocați pentru tine."),
         ("shield", "Ziua lucrării", "Apeși „Am ajuns”, iar rețeaua confirmă că ești la adresă. Asta îți crește "
                                     "punctualitatea în Trust Score."),
-        ("star", "Construiește-ți reputația", "După confirmarea clientului primești banii (minus 10% comision). "
+        ("star", "Construiește-ți reputația", f"După confirmarea clientului primești banii (minus {config.PCT_COMISION} comision). "
                                               "Recenziile și feedback-ul în timp îți ridică Trust Score-ul."),
     ],
 }
@@ -112,7 +112,7 @@ FAQ = [
                           "verificarea identității și reclamații. Fiecare factor e afișat pe profil."),
     ("Când primește meșterul banii?", "Doar după ce clientul confirmă că lucrarea e în regulă. Până atunci banii "
                                       "stau blocați în SKILLIO."),
-    ("Ce înseamnă Urgent?", "Lucrarea costă cu 15% mai mult, iar meșterii o văd prima. Cei 15% merg la meșter."),
+    ("Ce înseamnă Urgent?", f"Lucrarea costă cu {config.PCT_URGENT} mai mult, iar meșterii o văd prima. Cei {config.PCT_URGENT} merg la meșter."),
     ("Ce fac dacă meșterul nu vine?", "La o oră după ora programată poți semnala asta, iar banii se întorc la tine."),
     ("Cum verificați meșterii?", "Prin rețeaua mobilă (Nokia): numărul e verificat, iar un SIM schimbat recent "
                                  "apare ca avertisment. Sosirea la adresă e confirmată tot de rețea."),

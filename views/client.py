@@ -244,8 +244,8 @@ def solicitare(u):
                            if u["cartier"] in config.CARTIERE else 0, key="sol_cartier")
     buget = st.number_input("Buget orientativ (lei, opțional)", 0, 20000, int(d["pret_max"]), step=10, key="sol_buget")
     with st.container(key="cardurg_urgent" if st.session_state.get("sol_urgent") else "cardflat_urgent"):
-        urgent = st.toggle("Urgent (+15%)", value=d["urgenta"] == "urgent", key="sol_urgent")
-        st.caption("Meșterii văd solicitarea ta prima. Prețul crește cu 15%, iar diferența merge la meșter.")
+        urgent = st.toggle(f"Urgent (+{config.PCT_URGENT})", value=d["urgenta"] == "urgent", key="sol_urgent")
+        st.caption(f"Meșterii văd solicitarea ta prima. Prețul crește cu {config.PCT_URGENT}, iar diferența merge la meșter.")
     with st.container(horizontal=True):
         if st.button("Reia analiza", key="sol_reset", width="stretch"):
             for k in ("sol_diag", "sol_poza", "sol_descriere"):

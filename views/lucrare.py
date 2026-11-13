@@ -111,7 +111,7 @@ def _client(u, l):
         inv = logica.db.val("SELECT COUNT(*) FROM invitatii WHERE lucrare_id = ? AND status = 'noua'", (l["id"],), 0)
         c.h(f'<div class="sk-title" style="font-size:20px">Oferte primite ({len(oferte)})</div>'
             f'<div class="sk-cap">Solicitarea a ajuns la {inv} meșteri potriviți. Ofertele apar aici în timp real.'
-            f'{" Prețurile includ +15% urgent." if l["urgent"] else ""}</div>')
+            f'{f" Prețurile includ +{config.PCT_URGENT} urgent." if l["urgent"] else ""}</div>')
         if not oferte:
             c.gol("Așteptăm primele oferte. De obicei vin în câteva minute.", "clock")
         if len(oferte) > 1:
@@ -157,7 +157,7 @@ def _client(u, l):
         c.h('<div class="sk-title" style="font-size:20px">Plată</div>')
         rows = [("Ofertă meșter", c.lei(o["pret"]))]
         if l["urgent"]:
-            rows.append(("Urgent +15%", c.lei(o["total"] - o["pret"])))
+            rows.append((f"Urgent +{config.PCT_URGENT}", c.lei(o["total"] - o["pret"])))
         rows.append(("Programare", timp.data_ora(l["programat_la"])))
         rows.append(("Total de plată", c.lei(o["total"]), True))
         with st.container(key="card_plata"):
@@ -326,7 +326,7 @@ def _mester(u, l):
             if l["urgent"]:
                 c.h(f'<div class="sk-alert" style="background:var(--sk-urgent-soft);color:var(--sk-urgent)">'
                     f'{c.ico("alert")}<div>Urgent: clientul plătește <b>{c.lei(logica.total_cu_urgenta(pret, 1))}</b>. '
-                    f'Cei 15% în plus sunt ai tăi.</div></div>')
+                    f'Cei {config.PCT_URGENT} în plus sunt ai tăi.</div></div>')
             libere = logica.sloturi_libere(u["id"])
             if not libere:
                 st.warning("Nu ai ore libere în următoarele 7 zile. Eliberează ceva din calendar.")

@@ -79,6 +79,8 @@ Ce faci pe un telefon apare pe celălalt în 1-2 secunde. **Resetează demo** re
 Hărțile (folium) și fontul se încarcă de pe internet, deci la prezentare ai nevoie de conexiune.
 Dacă nu e internet, restul aplicației merge, doar hărțile rămân goale.
 
+Ești la început cu codul? Citește [GHID.md](GHID.md): explicații pas cu pas și exerciții.
+
 ## Structura
 
 ```

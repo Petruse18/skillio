@@ -28,6 +28,9 @@ ZILE_CALENDAR = 7          # câte zile în față se pot face programări
 RAZA_SOSIRE_M = 200        # cât de aproape de adresă trebuie să fie meșterul
 TOLERANTA_PUNCTUAL_MIN = 15
 MAX_INVITATI = 6           # câți meșteri primesc o solicitare
+# procentele ca text, pentru ecrane (ex. „15%”). Se calculează singure din valorile de mai sus.
+PCT_URGENT = f"{round(SPOR_URGENT * 100)}%"
+PCT_COMISION = f"{round(COMISION * 100)}%"
 
 # --- chei API (din fișierul .env) -------------------------------------------
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()

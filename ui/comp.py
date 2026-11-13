@@ -179,7 +179,7 @@ def badge_status(status):
 
 
 def badge_urgent():
-    return f'<span class="sk-badge urgent">{ico("alert", 12)} Urgent +15%</span>'
+    return f'<span class="sk-badge urgent">{ico("alert", 12)} Urgent +{config.PCT_URGENT}</span>'
 
 
 def meserie_nume(k):
