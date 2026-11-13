@@ -1,0 +1,123 @@
+/* Adaptează Streamlit la aspectul de telefon SKILLIO. */
+html, body, .stApp, [data-testid="stAppViewContainer"] { background: var(--sk-bg) !important; }
+.stApp, .stApp p, .stApp label, .stApp input, .stApp textarea, .stApp button, .stApp li { font-family: var(--sk-font) !important; }
+.stApp { color: var(--sk-ink); }
+header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], footer,
+[data-testid="stStatusWidget"] { display: none !important; }
+[data-testid="stMainBlockContainer"], .block-container {
+  max-width: 440px !important; padding: 14px 16px 104px !important; margin: 0 auto;
+}
+.wide [data-testid="stMainBlockContainer"] { max-width: 1280px !important; }
+[data-testid="stVerticalBlock"] { gap: 12px; }
+.sk p { margin: 0; }
+.stMarkdown p { font-size: 15px; }
+h1, h2, h3 { font-family: var(--sk-font) !important; letter-spacing: -.02em; color: var(--sk-ink); }
+
+/* Butoane */
+.stButton > button, .stFormSubmitButton > button, .stLinkButton > a, .stDownloadButton > button {
+  min-height: var(--sk-tap); border-radius: var(--sk-r-md) !important; font-weight: 700 !important;
+  font-size: 15px; border: 0 !important; box-shadow: none !important; transition: background .15s;
+}
+.stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
+  background: var(--sk-primary) !important; color: var(--sk-on-primary) !important;
+}
+.stButton > button[kind="primary"]:hover, .stFormSubmitButton > button[kind="primary"]:hover { background: var(--sk-primary-press) !important; }
+.stButton > button[kind="secondary"], .stFormSubmitButton > button[kind="secondary"], .stLinkButton > a {
+  background: var(--sk-primary-soft) !important; color: var(--sk-primary) !important;
+}
+.stButton > button[kind="secondary"]:hover { background: #d3ecdc !important; }
+.stButton > button[kind="tertiary"] { min-height: 36px; color: var(--sk-ink) !important; padding: 4px 8px !important; }
+.stButton > button:disabled { background: var(--sk-surface-2) !important; color: var(--sk-muted) !important; }
+.stButton > button p, .stFormSubmitButton > button p { font-size: 15px !important; font-weight: 700 !important; }
+[class*="st-key-danger"] button { background: transparent !important; color: var(--sk-danger) !important; min-height: 36px; }
+[class*="st-key-danger"] button p { font-size: 14px !important; }
+[class*="st-key-urg"] button[kind="primary"] { background: var(--sk-urgent-fill) !important; }
+[class*="st-key-link"] button { min-height: 32px; padding: 2px 4px !important; color: var(--sk-primary) !important; }
+[class*="st-key-link"] button p { font-size: 14px !important; }
+
+/* Câmpuri */
+.stTextInput input, .stNumberInput input, .stTextArea textarea, [data-baseweb="select"] > div, .stDateInput input {
+  border-radius: var(--sk-r-md) !important; background: var(--sk-surface) !important; font-size: 15px !important; color: var(--sk-ink) !important;
+}
+[data-baseweb="input"], [data-baseweb="textarea"], [data-baseweb="select"] > div {
+  border-radius: var(--sk-r-md) !important; border-color: var(--sk-line) !important; background: var(--sk-surface) !important;
+}
+[data-baseweb="input"]:focus-within, [data-baseweb="textarea"]:focus-within { border-color: var(--sk-primary) !important; }
+.stTextInput label p, .stTextArea label p, .stSelectbox label p, .stNumberInput label p, .stSlider label p,
+.stMultiSelect label p, .stFileUploader label p, .stRadio label p, .stToggle label p, .stCheckbox label p,
+.stPills label p, .stSegmentedControl label p, .stCameraInput label p { font-size: 13px !important; font-weight: 700 !important; color: var(--sk-ink); }
+[data-testid="stFileUploaderDropzone"] { border-radius: var(--sk-r-md); border: 2px dashed var(--sk-line); background: var(--sk-surface); }
+[data-testid="stExpander"] details { border-radius: var(--sk-r-lg) !important; border-color: var(--sk-line) !important; background: var(--sk-surface); }
+[data-baseweb="tag"] { background: var(--sk-primary-soft) !important; color: var(--sk-primary) !important; }
+
+/* Containere-card: orice container cu cheie care începe cu „card” */
+[class*="st-key-card"] {
+  background: var(--sk-surface); border: 1px solid var(--sk-line); border-radius: var(--sk-r-lg);
+  box-shadow: var(--sk-shadow); padding: 14px; gap: 10px;
+}
+[class*="st-key-cardurg"] { border-color: var(--sk-urgent-fill); }
+[class*="st-key-cardsel"] { box-shadow: 0 0 0 2px var(--sk-primary), var(--sk-shadow); }
+[class*="st-key-cardflat"] { box-shadow: none; }
+
+/* Bara de sus */
+[class*="st-key-appbar"] { gap: 6px; margin-bottom: 2px; }
+[class*="st-key-appbar"] .stButton > button { width: 40px; min-height: 40px; border-radius: 50% !important; background: var(--sk-surface-2) !important; }
+
+/* Navigarea de jos */
+.st-key-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(440px, 100%); z-index: 999;
+  background: var(--sk-surface); border-top: 1px solid var(--sk-line); padding: 6px 4px 10px; gap: 0 !important;
+  justify-content: space-around; box-shadow: 0 -8px 22px -18px rgba(15,61,43,.5);
+}
+.st-key-nav .stButton { flex: 1; }
+.st-key-nav .stButton > button {
+  width: 100%; min-height: 54px; background: transparent !important; color: var(--sk-muted) !important; padding: 2px !important;
+}
+.st-key-nav .stButton > button > div { flex-direction: column !important; gap: 0 !important; }
+.st-key-nav .stButton > button p { font-size: 11px !important; font-weight: 600 !important; }
+.st-key-nav .stButton > button span[data-testid="stIconMaterial"] { font-size: 24px !important; padding: 2px 14px; border-radius: 99px; }
+.st-key-nav .stButton > button[kind="primary"] { color: var(--sk-primary) !important; }
+.st-key-nav .stButton > button[kind="primary"] span[data-testid="stIconMaterial"] { background: var(--sk-primary-soft); }
+.st-key-nav [class*="st-key-nav_nou"] button span[data-testid="stIconMaterial"] {
+  background: var(--sk-primary) !important; color: var(--sk-on-primary); border-radius: 50%; padding: 10px; margin-top: -22px;
+  box-shadow: var(--sk-shadow);
+}
+
+/* Diverse */
+[data-testid="stImage"] img { border-radius: var(--sk-r-md); }
+iframe { border-radius: var(--sk-r-lg); }
+[data-testid="stAlert"] { border-radius: var(--sk-r-md); }
+[data-testid="stChatInput"] { border-radius: var(--sk-r-pill) !important; }
+.stTabs [data-baseweb="tab"] p { font-weight: 700; }
+.stTabs [aria-selected="true"] p { color: var(--sk-primary); }
+.stTabs [data-baseweb="tab-highlight"] { background: var(--sk-primary) !important; }
+[data-testid="stMetricValue"] { font-weight: 800; }
+
+/* Modul de prezentare: telefoane simulate */
+.st-key-telefoane iframe, [class*="st-key-tel_"] iframe {
+  border: 12px solid #101614 !important; border-radius: 44px !important; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6);
+  background: var(--sk-bg);
+}
+/* Grila de categorii și calendarul */
+[class*="st-key-cats"] .stButton { flex: 1; min-width: 0; }
+[class*="st-key-cats"] .stButton > button { min-height: 78px; padding: 6px 2px !important; background: var(--sk-surface) !important; color: var(--sk-ink) !important; box-shadow: inset 0 0 0 1.5px var(--sk-line) !important; border-radius: var(--sk-r-lg) !important; }
+[class*="st-key-cats"] .stButton > button p { font-size: 12px !important; line-height: 1.2; margin: 0; }
+[class*="st-key-calrow"] .stButton { flex: 1; min-width: 0; }
+[class*="st-key-calrow"] .stButton > button { min-height: 50px; padding: 4px 1px !important; border-radius: 10px !important; }
+[class*="st-key-calrow"] .stButton > button p { font-size: 12px !important; line-height: 1.15; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[class*="st-key-calrow"] .stButton > button[kind="tertiary"] { background: repeating-linear-gradient(45deg,var(--sk-surface-2),var(--sk-surface-2) 4px,var(--sk-line) 4px,var(--sk-line) 6px) !important; color: var(--sk-muted) !important; }
+[class*="st-key-calrow"] .stButton > button[kind="secondary"] { background: var(--sk-surface-2) !important; color: var(--sk-muted) !important; }
+[data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
+.sk { line-height: 1.45; }
+.sk .sk-cap { line-height: 1.4; }
+[class*="st-key-cats"] .stButton > button > div { flex-direction: column !important; gap: 2px !important; }
+[class*="st-key-calrow"] .stButton > button > div { flex-direction: column !important; gap: 0 !important; }
+[data-testid="stMainBlockContainer"], .block-container { padding-top: 18px !important; }
+[class*="st-key-cats"] > div, [class*="st-key-calrow"] > div { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; }
+[class*="st-key-top_"] { align-items: center; }
+[class*="st-key-cats"] .stButton > button > div > span { display: flex !important; flex-direction: column !important; align-items: center; gap: 4px; }
+[class*="st-key-cats"] .stButton > button [data-testid="stIconEmoji"] { font-size: 24px !important; line-height: 1; }
+[class*="st-key-cats"] .stButton > button p { font-size: 11.5px !important; font-weight: 700 !important; }
+[class*="st-key-cardflat_top_"] { flex-wrap: nowrap !important; align-items: center; padding: 10px 12px; }
+[class*="st-key-cardflat_top_"] > div:first-child { flex: 1 1 auto !important; width: auto !important; min-width: 0; }
+[class*="st-key-cardflat_top_"] > div:last-child { flex: 0 0 auto !important; }
