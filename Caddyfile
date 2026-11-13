@@ -1,0 +1,5 @@
+# Caddy pune HTTPS automat pentru domeniul din .env (DOMENIU=...) și trimite totul la aplicație.
+{$DOMENIU} {
+	encode gzip
+	reverse_proxy app:8501
+}

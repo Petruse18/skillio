@@ -98,7 +98,12 @@ skillio/
 ├── services/            ← legătura cu lumea de afară
 │   ├── ai.py            ← Gemini: din text + poză → meserie, preț, urgență. Fără cheie, folosește cuvinte cheie.
 │   ├── nokia.py         ← Nokia: număr verificat, SIM schimbat, e meșterul la adresă? Fără cheie: simulat.
-│   └── geo.py           ← distanțe în km și coordonatele unei adrese
+│   ├── geo.py           ← distanțe în km și coordonatele unei adrese
+│   ├── autentificare.py ← login securizat prin Auth0
+│   ├── stocare.py       ← unde stau pozele: cloud (Vultr / S3) sau local
+│   └── mesaje_externe.py ← notificări pe email și SMS
+│
+├── scripts/             ← unelte: migrare în PostgreSQL, backup, urcarea pozelor în cloud
 │
 ├── ui/                  ← piese vizuale refolosite
 │   ├── comp.py          ← „cărămizi”: avatar, stele, insigne, carduri, navigare (go, inapoi)
@@ -160,7 +165,8 @@ Statusurile, în ordine: `deschisa → acceptata → de_plata → programata →
 
 ## 5. Unde stau datele
 
-Totul e în fișierul `data/skillio.db`, creat automat la prima pornire, cu date demo din `core/seed.py`.
+Pe laptop, totul e în fișierul `data/skillio.db`, creat automat la prima pornire, cu date demo din `core/seed.py`.
+Dacă în `.env` există `DATABASE_URL`, aceleași tabele stau în PostgreSQL (Tiger Data). Codul e același, vezi PRODUCTIE.md.
 
 Tabelele principale (definite în `core/db.py`, în `SCHEMA`):
 

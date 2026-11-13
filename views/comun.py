@@ -3,7 +3,8 @@ import streamlit as st
 
 from core import config, db, logica, timp, trust
 from core.logica import Eroare
-from services import geo, nokia
+from services import autentificare as autentificare_srv
+from services import geo, nokia, stocare
 from ui import comp as c
 
 # ---------------------------------------------------------------------------
@@ -29,12 +30,30 @@ def autentificare():
         f'<div class="sk-b" style="color:var(--sk-muted)">{config.SLOGAN}<br>Meșteri de încredere din '
         f'{config.ORAS}, verificați prin rețeaua mobilă.</div></div>')
 
-    tab_in, tab_nou = st.tabs(["Intră în cont", "Cont nou"])
+    if autentificare_srv.activ():
+        if st.button("Intră în cont", type="primary", width="stretch", key="auth0_btn", icon=":material/login:"):
+            autentificare_srv.intra()
+        c.alerta("Login securizat prin <b>Auth0</b>: cod pe email sau SMS, ori contul Google. "
+                 "Nu păstrăm nicio parolă.", "trust", "shield")
+    if not config.DEMO_LOGIN:
+        if not autentificare_srv.activ():
+            st.error("Login-ul nu e configurat. Adaugă datele Auth0 în .streamlit/secrets.toml "
+                     "sau pune DEMO_LOGIN=1 în .env.")
+        return
+    if autentificare_srv.activ():
+        st.space("small")
+        st.caption("Mod demo, pentru prezentare (se oprește cu DEMO_LOGIN=0)")
+    _intrare_demo()
+
+
+def _intrare_demo():
+    tab_in, tab_nou = st.tabs(["Intră cu telefonul", "Cont nou"])
     with tab_in:
         tel = st.text_input("Număr de telefon", placeholder="07xx xxx xxx", key="login_tel")
         c.alerta("Fără parolă și fără SMS. Operatorul confirmă că numărul e chiar pe telefonul tău "
                  "(<b>Nokia Number Verification</b>).", "trust", "shield")
-        if st.button("Continuă", type="primary", width="stretch", key="login_btn"):
+        if st.button("Continuă", type="primary" if not autentificare_srv.activ() else "secondary", width="stretch",
+                     key="login_btn"):
             try:
                 uid, mod, schimbat = logica.intra(tel)
                 if schimbat:
@@ -50,21 +69,45 @@ def autentificare():
                     _logheaza(uid)
 
     with tab_nou:
-        rol = st.segmented_control("Sunt", ["Client", "Meșter"], default="Client", key="reg_rol", width="stretch")
-        nume = st.text_input("Nume și prenume", key="reg_nume")
-        tel = st.text_input("Număr de telefon", placeholder="07xx xxx xxx", key="reg_tel")
-        cartier = st.selectbox("Cartier", list(config.CARTIERE), key="reg_cartier")
-        adresa = st.text_input("Adresa (stradă, număr)", key="reg_adresa") if rol != "Meșter" else ""
-        meserii = []
-        if rol == "Meșter":
-            meserii = st.multiselect("Meserii", list(config.MESERII), format_func=c.meserie_nume, key="reg_meserii")
-        if st.button("Creează contul", type="primary", width="stretch", key="reg_btn"):
-            try:
-                uid = logica.creeaza_cont(tel, nume, "mester" if rol == "Meșter" else "client", cartier, adresa,
-                                          meserii)
-                _logheaza(uid)
-            except Eroare as e:
-                st.error(str(e))
+        _formular_cont("reg")
+
+
+def _formular_cont(k, info=None):
+    """Formularul de cont nou. Cu info (de la Auth0), contul se leagă de login-ul Auth0."""
+    info = info or {}
+    rol = st.segmented_control("Sunt", ["Client", "Meșter"], default="Client", key=f"{k}_rol", width="stretch")
+    nume = st.text_input("Nume și prenume", info.get("nume", ""), key=f"{k}_nume")
+    tel = st.text_input("Număr de telefon", info.get("telefon", ""), placeholder="07xx xxx xxx", key=f"{k}_tel")
+    cartier = st.selectbox("Cartier", list(config.CARTIERE), key=f"{k}_cartier")
+    adresa = st.text_input("Adresa (stradă, număr)", key=f"{k}_adresa") if rol != "Meșter" else ""
+    meserii = []
+    if rol == "Meșter":
+        meserii = st.multiselect("Meserii", list(config.MESERII), format_func=c.meserie_nume, key=f"{k}_meserii")
+    if st.button("Creează contul", type="primary", width="stretch", key=f"{k}_btn"):
+        try:
+            rol_db = "mester" if rol == "Meșter" else "client"
+            if autentificare_srv.e_admin_dupa_email(info.get("email")):
+                rol_db = "admin"
+            uid = logica.creeaza_cont(tel, nume, rol_db, cartier, adresa, meserii,
+                                      email=info.get("email"), auth_sub=info.get("sub"))
+            if info:
+                st.query_params.clear()
+                st.query_params["p"] = "acasa"
+                st.rerun()
+            _logheaza(uid)
+        except Eroare as e:
+            st.error(str(e))
+
+
+def profil_nou():
+    """Prima intrare prin Auth0: omul e logat, dar încă nu are cont SKILLIO."""
+    i = autentificare_srv.info()
+    c.h(f'<div class="sk-title">Bun venit!</div><div class="sk-b" style="color:var(--sk-muted)">Ești logat ca '
+        f'<b>{c.esc(i.get("email") or i.get("nume") or "")}</b>. Mai avem nevoie de câteva date ca să-ți '
+        f'facem contul.</div>')
+    _formular_cont("auth", i)
+    if st.button("Ieși", key="danger_auth_iesi"):
+        autentificare_srv.iesi()
 
 
 # ---------------------------------------------------------------------------
@@ -388,7 +431,9 @@ def cont(u):
                     st.rerun()
         with st.expander("Poze cu lucrări anterioare"):
             for p in logica.portofoliu(u["id"])[:6]:
-                st.image(p["poza"], caption=p["descriere"])
+                date = stocare.citeste(p["poza"])
+                if date:
+                    st.image(date, caption=p["descriere"])
             f = st.file_uploader("Adaugă o poză", type=["jpg", "jpeg", "png"], key="port_up")
             desc = st.text_input("Ce ai lucrat", key="port_desc")
             if st.button("Adaugă în portofoliu", key="port_btn", disabled=f is None):
@@ -425,4 +470,6 @@ def cont(u):
         logica.sterge_sesiune(st.query_params.get("s"))
         st.query_params.clear()
         st.session_state.clear()
+        if autentificare_srv.logat():
+            autentificare_srv.iesi()
         st.rerun()

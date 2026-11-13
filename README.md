@@ -33,6 +33,11 @@ Apoi deschide:
 
 La prima pornire aplicația creează baza de date `data/skillio.db` cu date demo (durează câteva secunde).
 
+## Producție (login securizat, PostgreSQL, poze în cloud, server cu HTTPS, notificări)
+
+Totul e descris pas cu pas în [PRODUCTIE.md](PRODUCTIE.md). Fiecare parte pornește doar când îi pui cheile,
+așa că fără ele aplicația rămâne exact ca în demo.
+
 ## Conturi demo
 
 Pe ecranul de intrare sunt butoane pentru fiecare. Nu există parole: intrarea se face cu numărul de telefon,
@@ -94,6 +99,11 @@ core/timp.py        ceasul aplicației (se poate da înainte pentru demo)
 services/ai.py      Gemini: diagnostic din text și poză
 services/nokia.py   Nokia Network as Code: număr, SIM swap, locație
 services/geo.py     distanțe și coordonate
+services/autentificare.py   login Auth0
+services/stocare.py         poze în cloud (S3 / Vultr) sau local
+services/mesaje_externe.py  notificări pe email și SMS
+scripts/            migrare în PostgreSQL, backup, urcarea pozelor în cloud
+Dockerfile, docker-compose.yml, Caddyfile   serverul, cu HTTPS automat
 ui/                 componente, hărți, stiluri
 views/              ecranele: client, meșter, lucrare, comun (intrare, ghid, chat, profil), admin, prezentare
 ```

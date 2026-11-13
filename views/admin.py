@@ -1,8 +1,10 @@
 """Panoul echipei SKILLIO: rapoarte și dispute, bani blocați, comision, controale pentru prezentare."""
+import json
+
 import streamlit as st
 
 from core import config, db, logica, timp
-from services import ai, nokia
+from services import ai, autentificare, mesaje_externe, nokia, stocare
 from ui import comp as c
 
 
@@ -48,12 +50,18 @@ def panou(u):
         for m in acte:
             with st.container(key=f"card_act{m['id']}"):
                 c.h(f'<div class="sk-row">{c.avatar(m)}<b class="sk-b">{c.esc(m["nume"])}</b></div>')
-                if m["act_poza"] and not m["act_poza"].endswith(".pdf"):
-                    st.image(m["act_poza"])
+                date = stocare.citeste(m["act_poza"]) if m["act_poza"] and not m["act_poza"].endswith(".pdf") else None
+                if date:
+                    st.image(date)
                 if st.button("Marchează verificat", key=f"act_ok{m['id']}", type="primary", width="stretch"):
                     logica.actualizeaza_profil(m["id"], act_status="verificat")
                     st.rerun()
 
+    _integrari()
+
+    if not (config.MOD_PREZENTARE or config.DEMO_LOGIN):
+        _toate_lucrarile()
+        return
     with st.expander("Controale pentru prezentare", expanded=True):
         st.markdown(f"Ceasul aplicației: **{timp.data_ora(timp.acum())}** (decalaj {timp.decalaj_zile()} zile)")
         st.caption("Dă timpul înainte ca să apară întrebările „după o zi / o săptămână / o lună”.")
@@ -72,9 +80,6 @@ def panou(u):
             if departe != bool(ionel["departe_demo"]):
                 logica.actualizeaza_profil(ionel["id"], departe_demo=int(departe))
                 st.rerun()
-        st.markdown(f"Gemini: **{'conectat' if ai.activ() else 'mod offline (reguli)'}** · "
-                    f"Nokia: **{'conectat' if nokia.activ() else 'mod simulat'}**")
-        st.caption("Cheile se pun în fișierul .env (vezi README).")
         if st.button("Resetează datele demo", key="danger_reset"):
             st.session_state["_confirm_reset"] = True
         if st.session_state.get("_confirm_reset"):
@@ -89,6 +94,10 @@ def panou(u):
                     st.query_params.clear()
                     st.rerun()
 
+    _toate_lucrarile()
+
+
+def _toate_lucrarile():
     with st.expander("Toate lucrările"):
         for l in db.q("SELECT l.*, a.nume AS cn, b.nume AS mn FROM lucrari l JOIN utilizatori a ON a.id = l.client_id "
                       "LEFT JOIN utilizatori b ON b.id = l.mester_id WHERE l.status != 'finalizata' OR "
@@ -96,3 +105,33 @@ def panou(u):
                       (timp.iso(timp.acum().replace(hour=0)),)):
             st.markdown(f"**#{l['id']} {l['titlu']}** · {logica.STATUS[l['status']][0]} · {l['cn']}"
                         f"{' → ' + l['mn'] if l['mn'] else ''}")
+
+
+def _integrari():
+    stari = [("Login Auth0", autentificare.activ(), "securizat" , "doar intrare demo"),
+             ("Bază de date", db.PG, "PostgreSQL", "SQLite local"),
+             ("Poze", stocare.activ(), "cloud (S3)", "local"),
+             ("Email", mesaje_externe.email_activ(), "SMTP", "oprit"),
+             ("SMS", mesaje_externe.sms_activ(), "Twilio", "oprit"),
+             ("Gemini", ai.activ(), "conectat", "reguli offline"),
+             ("Nokia", nokia.activ(), "conectat", "simulat")]
+    with st.expander("Integrări și producție"):
+        c.h('<div class="sk-badges">' + "".join(
+            f'<span class="sk-badge {"ok" if on else ""}">{n}: {da if on else nu}</span>' for n, on, da, nu in stari)
+            + '</div>')
+        st.caption("Cheile se pun în .env, iar Auth0 în .streamlit/secrets.toml (vezi PRODUCTIE.md).")
+        if mesaje_externe.email_activ() or mesaje_externe.sms_activ():
+            catre = st.text_input("Trimite un mesaj de test către (email sau telefon)", key="adm_test_catre")
+            if st.button("Trimite test", key="adm_test_btn", disabled=not catre.strip()):
+                t = catre.strip()
+                ok = (mesaje_externe.trimite_email(t, "Test SKILLIO", "Notificările prin email funcționează.")
+                      if "@" in t else mesaje_externe.trimite_sms(t, "Notificările prin SMS funcționează."))
+                (st.success if ok else st.error)("Trimis." if ok else "Nu s-a putut trimite. Vezi jurnalul.")
+            for j in mesaje_externe.ULTIMELE[:8]:
+                st.caption(f'{"✅" if j["ok"] else "❌"} {j["canal"]} → {j["catre"]} {j["detaliu"]}')
+        if st.button("Pregătește un backup (JSON)", key="adm_backup"):
+            date = {t: db.q(f"SELECT * FROM {t}") for t in db.TABELE}
+            st.session_state["_backup"] = json.dumps(date, ensure_ascii=False, default=str)
+        if st.session_state.get("_backup"):
+            st.download_button("Descarcă backup-ul", st.session_state["_backup"], file_name="skillio-backup.json",
+                               mime="application/json", key="adm_backup_dl")

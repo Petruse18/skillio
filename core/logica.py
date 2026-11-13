@@ -18,7 +18,7 @@ import json
 import secrets
 from datetime import datetime, timedelta
 
-from services import geo, nokia
+from services import geo, mesaje_externe, nokia, stocare
 
 from . import config, db, timp, trust
 
@@ -60,7 +60,7 @@ def user_dupa_telefon(tel):
     return db.q1("SELECT * FROM utilizatori WHERE telefon = ?", (tel,))
 
 
-def creeaza_cont(telefon, nume, rol, cartier, adresa="", meserii=()):
+def creeaza_cont(telefon, nume, rol, cartier, adresa="", meserii=(), email=None, auth_sub=None):
     telefon = normalizeaza_telefon(telefon)
     if len(telefon) < 10:
         raise Eroare("Numărul de telefon pare incomplet. Scrie-l cu prefix, de ex. 0722 123 456.")
@@ -75,10 +75,23 @@ def creeaza_cont(telefon, nume, rol, cartier, adresa="", meserii=()):
     lat, lon = config.CARTIERE.get(cartier, config.CENTRU_ORAS)
     uid = db.ex(
         "INSERT INTO utilizatori(telefon, nume, rol, creat_la, numar_verificat, sim_ok, sim_verificat_la, adresa, "
-        "cartier, lat, lon, meserii) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        "cartier, lat, lon, meserii, email, auth_sub) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (telefon, nume.strip(), rol, timp.iso(timp.acum()), int(verificat), int(not schimbat),
-         timp.iso(timp.acum()), adresa.strip(), cartier, lat, lon, ",".join(meserii)))
+         timp.iso(timp.acum()), adresa.strip(), cartier, lat, lon, ",".join(meserii), email, auth_sub))
     return uid
+
+
+def user_dupa_auth(sub, email=None):
+    """Găsește contul legat de un login Auth0. Dacă emailul există deja, leagă contul de Auth0."""
+    u = db.q1("SELECT * FROM utilizatori WHERE auth_sub = ?", (sub,)) if sub else None
+    if not u and email:
+        u = db.q1("SELECT * FROM utilizatori WHERE lower(email) = ? AND auth_sub IS NULL", (email.lower(),))
+        if u:
+            db.ex("UPDATE utilizatori SET auth_sub = ? WHERE id = ?", (sub, u["id"]))
+    if u and email and (email.lower() in config.ADMIN_EMAILS) and u["rol"] != "admin":
+        db.ex("UPDATE utilizatori SET rol = 'admin' WHERE id = ?", (u["id"],))
+        u = user(u["id"])
+    return u
 
 
 def intra(telefon):
@@ -97,16 +110,21 @@ def intra(telefon):
 
 
 def sesiune_noua(uid) -> str:
-    token = secrets.token_urlsafe(12)
-    db.ex("INSERT INTO sesiuni(token, user_id, creat_la) VALUES(?,?,?)", (token, uid, timp.iso(timp.acum())))
+    """Sesiune pentru intrarea demo (telefon). Expiră după SESIUNE_ZILE zile (ora reală, nu ceasul demo)."""
+    token = secrets.token_urlsafe(24)
+    acum = datetime.now()
+    db.ex("INSERT INTO sesiuni(token, user_id, creat_la, expira_la) VALUES(?,?,?,?)",
+          (token, uid, timp.iso(acum), timp.iso(acum + timedelta(days=config.SESIUNE_ZILE))))
     return token
 
 
 def user_din_sesiune(token):
     if not token:
         return None
-    r = db.q1("SELECT user_id FROM sesiuni WHERE token = ?", (token,))
-    return user(r["user_id"]) if r else None
+    r = db.q1("SELECT user_id, expira_la FROM sesiuni WHERE token = ?", (token,))
+    if not r or (r["expira_la"] and r["expira_la"] < timp.iso(datetime.now())):
+        return None
+    return user(r["user_id"])
 
 
 def sterge_sesiune(token):
@@ -135,13 +153,12 @@ def portofoliu(mester_id):
 
 
 def salveaza_poza(fisier, prefix="img") -> str | None:
-    """Salvează o poză încărcată în data/uploads și întoarce calea."""
+    """Salvează o poză încărcată (în cloud sau local, vezi services/stocare.py) și întoarce referința."""
     if fisier is None:
         return None
     ext = (fisier.name.rsplit(".", 1)[-1] if "." in fisier.name else "jpg").lower()[:5]
     nume = f"{prefix}_{secrets.token_hex(6)}.{ext}"
-    (config.UPLOADS / nume).write_bytes(fisier.getvalue())
-    return str(config.UPLOADS / nume)
+    return stocare.salveaza(fisier.getvalue(), nume)
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +250,7 @@ def creeaza_lucrare(client_id, titlu, descriere, adresa, cartier, meserie, urgen
         invitati.append(m["id"])
     for loc, mid in enumerate(invitati):
         db.ex("INSERT OR IGNORE INTO invitatii(lucrare_id, mester_id, loc) VALUES(?,?,?)", (lid, mid, loc))
-        notifica(mid, ("URGENT: " if urgent else "") + f"Solicitare nouă lângă tine: {titlu or descriere[:40]}", lid)
+        notifica(mid, ("URGENT: " if urgent else "") + f"Solicitare nouă lângă tine: {titlu or descriere[:40]}", lid, extern=True)
     mesaj_sistem(lid, "Solicitarea a fost trimisă la " + (f"{len(invitati)} meșteri potriviți." if invitati
                                                           else "meșterii din zonă."))
     return lid, len(invitati)
@@ -318,7 +335,7 @@ def trimite_oferta(lid, mester_id, pret, propus_la: datetime, mesaj=""):
                 (lid, mester_id, pret, total_cu_urgenta(pret, l["urgent"]), timp.iso(propus_la), mesaj.strip(),
                  "trimisa", timp.iso(timp.acum())))
     m = user(mester_id)
-    notifica(l["client_id"], f"Ofertă nouă de la {m['nume']}: {timp.lei(total_cu_urgenta(pret, l['urgent']))}", lid)
+    notifica(l["client_id"], f"Ofertă nouă de la {m['nume']}: {timp.lei(total_cu_urgenta(pret, l['urgent']))}", lid, extern=True)
     return oid
 
 
@@ -346,7 +363,7 @@ def accepta_oferta(oid, client_id):
         notifica(alt["mester_id"], f"Clientul a ales altă ofertă pentru „{l['titlu']}”.", l["id"])
     mesaj_sistem(l["id"], f"{user(client_id)['nume']} a acceptat oferta de {timp.lei(o['total'])}. "
                           f"Mai rămâne de confirmat ora.")
-    notifica(o["mester_id"], f"Oferta ta pentru „{l['titlu']}” a fost acceptată!", l["id"])
+    notifica(o["mester_id"], f"Oferta ta pentru „{l['titlu']}” a fost acceptată!", l["id"], extern=True)
 
 
 def propune_ora(lid, uid, cand: datetime):
@@ -358,7 +375,7 @@ def propune_ora(lid, uid, cand: datetime):
     rol = "client" if uid == l["client_id"] else "mester"
     db.ex("UPDATE lucrari SET prog_propus = ?, prog_propus_de = ? WHERE id = ?", (timp.iso(cand), rol, lid))
     mesaj_sistem(lid, f"{user(uid)['nume']} propune {timp.data_ora(cand)}.")
-    notifica(l["mester_id"] if rol == "client" else l["client_id"], f"Oră nouă propusă: {timp.data_ora(cand)}", lid)
+    notifica(l["mester_id"] if rol == "client" else l["client_id"], f"Oră nouă propusă: {timp.data_ora(cand)}", lid, extern=True)
 
 
 def confirma_ora(lid, uid):
@@ -371,7 +388,7 @@ def confirma_ora(lid, uid):
     db.ex("UPDATE lucrari SET status = 'de_plata', programat_la = prog_propus, prog_propus = NULL WHERE id = ?", (lid,))
     mesaj_sistem(lid, f"Ora e stabilită: {timp.data_ora(l['prog_propus'])}. Clientul poate plăti.")
     notifica(l["client_id"] if rol == "mester" else l["mester_id"],
-             f"Programare confirmată: {timp.data_ora(l['prog_propus'])}", lid)
+             f"Programare confirmată: {timp.data_ora(l['prog_propus'])}", lid, extern=True)
 
 
 def plateste(lid, client_id):
@@ -386,7 +403,7 @@ def plateste(lid, client_id):
     db.ex("UPDATE lucrari SET status = 'programata' WHERE id = ?", (lid,))
     mesaj_sistem(lid, f"{timp.lei(o['total'])} plătiți și blocați în SKILLIO până la finalul lucrării.")
     notifica(l["mester_id"], f"Clientul a plătit {timp.lei(o['total'])} (blocați până la final). "
-                             f"Te așteaptă {timp.data_ora(l['programat_la'])}.", lid)
+                             f"Te așteaptă {timp.data_ora(l['programat_la'])}.", lid, extern=True)
 
 
 def bani_lucrare(lid):
@@ -462,7 +479,7 @@ def lucrare_gata(lid, mester_id, nota="", poza=None):
     db.ex("UPDATE lucrari SET status = 'gata', gata_la = ?, nota_mester = ?, poza_dupa = ? WHERE id = ?",
           (timp.iso(timp.acum()), nota.strip(), poza, lid))
     mesaj_sistem(lid, "Meșterul a marcat lucrarea ca gata." + (f" Notă: {nota.strip()}" if nota.strip() else ""))
-    notifica(l["client_id"], "Lucrarea e gata. Verifică și confirmă ca să plătești meșterul.", lid)
+    notifica(l["client_id"], "Lucrarea e gata. Verifică și confirmă ca să plătești meșterul.", lid, extern=True)
 
 
 def confirma_lucrare(lid, client_id):
@@ -482,7 +499,7 @@ def confirma_lucrare(lid, client_id):
     net = total * (1 - config.COMISION)
     mesaj_sistem(lid, f"Clientul a confirmat lucrarea. {timp.lei(net)} au ajuns la meșter "
                       f"(din {timp.lei(total)}, comision SKILLIO {config.COMISION:.0%}).")
-    notifica(l["mester_id"], f"Ai încasat {timp.lei(net)} pentru „{l['titlu']}”.", lid)
+    notifica(l["mester_id"], f"Ai încasat {timp.lei(net)} pentru „{l['titlu']}”.", lid, extern=True)
 
 
 def nu_a_venit(lid, client_id):
@@ -748,9 +765,12 @@ def calendar_mester(mester_id, zile=config.ZILE_CALENDAR):
 # ---------------------------------------------------------------------------
 # Notificări
 # ---------------------------------------------------------------------------
-def notifica(uid, text, lid=None):
+def notifica(uid, text, lid=None, extern=False):
+    """Notificare în aplicație (clopoțelul). Cu extern=True pleacă și pe email / SMS, dacă sunt configurate."""
     db.ex("INSERT INTO notificari(user_id, text, lucrare_id, creat_la) VALUES(?,?,?,?)",
           (uid, text, lid, timp.iso(timp.acum())))
+    if extern:
+        mesaje_externe.anunta(user(uid), text)
 
 
 def notificari(uid, limita=40):

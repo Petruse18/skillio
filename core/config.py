@@ -43,6 +43,37 @@ NOKIA_NUMAR_TEST = os.getenv("NOKIA_NUMAR_TEST", "").strip()
 GEOCODARE = os.getenv("GEOCODARE", "1").strip() == "1"
 MOD_PREZENTARE = os.getenv("MOD_PREZENTARE", "1").strip() == "1"
 
+
+def _env(nume, implicit=""):
+    return os.getenv(nume, implicit).strip()
+
+
+# --- producție (fiecare parte e opțională: fără cheie, aplicația merge ca înainte) ---------------
+# 1. Login: Auth0 se configurează în .streamlit/secrets.toml (vezi secrets.toml.example).
+#    DEMO_LOGIN=1 lasă și intrarea demo cu numărul de telefon (pentru prezentare). În producție: 0.
+DEMO_LOGIN = _env("DEMO_LOGIN", "1") == "1"
+ADMIN_EMAILS = {e.strip().lower() for e in _env("ADMIN_EMAILS").split(",") if e.strip()}
+SESIUNE_ZILE = int(_env("SESIUNE_ZILE", "30") or 30)
+# 2. Baza de date: gol = SQLite local; altfel PostgreSQL (Tiger Data), ex. postgresql://user:parola@host:port/db
+DATABASE_URL = _env("DATABASE_URL")
+DATE_DEMO = _env("DATE_DEMO", "1") == "1"      # la o bază goală, pune datele demo
+# 3. Poze în cloud (Vultr Object Storage sau orice S3)
+S3_ENDPOINT = _env("S3_ENDPOINT")              # ex. https://ams1.vultrobjects.com
+S3_BUCKET = _env("S3_BUCKET")
+S3_ACCESS_KEY = _env("S3_ACCESS_KEY")
+S3_SECRET_KEY = _env("S3_SECRET_KEY")
+S3_REGION = _env("S3_REGION", "us-east-1")
+# 4. Notificări externe
+SMTP_HOST = _env("SMTP_HOST")                  # ex. smtp.gmail.com
+SMTP_PORT = int(_env("SMTP_PORT", "587") or 587)
+SMTP_USER = _env("SMTP_USER")
+SMTP_PAROLA = _env("SMTP_PAROLA")
+SMTP_FROM = _env("SMTP_FROM") or SMTP_USER
+TWILIO_SID = _env("TWILIO_SID")
+TWILIO_TOKEN = _env("TWILIO_TOKEN")
+TWILIO_FROM = _env("TWILIO_FROM")              # numărul Twilio, ex. +1555...
+URL_APP = _env("URL_APP", "http://localhost:8501")   # adresa publică, pusă în linkurile din email/SMS
+
 # --- meserii -----------------------------------------------------------------
 # pret = interval orientativ (lei), folosit când Gemini nu e disponibil
 MESERII = {

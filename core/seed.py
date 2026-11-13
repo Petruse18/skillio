@@ -8,10 +8,13 @@ să arate la fel de fiecare dată. Conturile de prezentare:
     Admin:   Echipa SKILLIO   0700 000 000
 """
 import json
+import io
 import random
 from datetime import datetime, timedelta
 
 from PIL import Image, ImageDraw, ImageFont
+
+from services import stocare
 
 from . import config, db, timp
 
@@ -115,9 +118,9 @@ def _poza_lucrare(meserie, eticheta, nume_fisier):
     except OSError:
         font = ImageFont.load_default()
     d.text((40, h - 68), eticheta[:30], fill=(15, 42, 32), font=font)
-    cale = config.UPLOADS / nume_fisier
-    img.save(cale, quality=82)
-    return str(cale)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG" if nume_fisier.endswith(".png") else "JPEG", quality=82)
+    return stocare.salveaza(buf.getvalue(), nume_fisier)
 
 
 def _poza_problema(meserie, nume_fisier):

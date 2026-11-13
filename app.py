@@ -8,6 +8,7 @@ import streamlit as st
 
 from core import config, db, logica
 from ui import comp as c
+from services import autentificare
 from views import admin, client, comun, lucrare, mester, prezentare
 
 st.set_page_config(page_title="SKILLIO", page_icon="🌿",
@@ -73,11 +74,18 @@ def _clopotel(u):
 
 
 def main():
-    if st.query_params.get("mod") == "prezentare" and config.MOD_PREZENTARE:
+    if st.query_params.get("mod") == "prezentare" and config.MOD_PREZENTARE and config.DEMO_LOGIN:
         prezentare.ecran()
         return
 
-    u = logica.user_din_sesiune(st.query_params.get("s"))
+    # 1. sesiunea demo din adresă (?s=...), folosită și de telefoanele din modul de prezentare
+    u = logica.user_din_sesiune(st.query_params.get("s")) if config.DEMO_LOGIN else None
+    # 2. login-ul securizat prin Auth0
+    if not u and autentificare.activ():
+        u = autentificare.user_curent()
+        if not u and autentificare.logat():
+            comun.profil_nou()
+            return
     c.arata_toast()
     if not u:
         comun.autentificare()

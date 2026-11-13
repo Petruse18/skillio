@@ -1,0 +1,30 @@
+# Pornește SKILLIO pe server, cu HTTPS automat (Caddy ia singur certificatul Let's Encrypt).
+#   docker compose up -d --build
+# Ai nevoie de: .env (cheile) și .streamlit/secrets.toml (Auth0) în folderul proiectului,
+# plus variabila DOMENIU în .env (ex. DOMENIU=skillio.ro).
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data                         # SQLite și poze locale, dacă nu folosești Tiger / S3
+      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
+      - ./backups:/app/backups
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

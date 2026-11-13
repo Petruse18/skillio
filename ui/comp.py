@@ -3,13 +3,13 @@
 Folosim clasele din ui/components.css (designul „Cartier”). HTML-ul e scris
 pe un singur rând per bloc, ca Streamlit să nu-l interpreteze ca Markdown.
 """
-import base64
 import html
 from pathlib import Path
 
 import streamlit as st
 
 from core import config, timp
+from services import stocare
 
 DIR = Path(__file__).parent
 
@@ -130,7 +130,7 @@ def initiale(nume):
 
 def avatar(u, mare=False):
     tick = f'<span class="tick">{ico("check", 10)}</span>' if u.get("numar_verificat") else ""
-    if u.get("poza") and Path(u["poza"]).exists():
+    if u.get("poza") and img_uri(u["poza"]):
         img = f'<img src="{img_uri(u["poza"])}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'
         return f'<div class="sk-av{" lg" if mare else ""}">{img}{tick}</div>'
     return f'<div class="sk-av{" lg" if mare else ""}">{esc(initiale(u.get("nume")))}{tick}</div>'
@@ -186,19 +186,15 @@ def meserie_nume(k):
     return config.MESERII.get(k, {}).get("nume", k)
 
 
-def img_uri(cale, mime="image/jpeg"):
-    try:
-        data = Path(cale).read_bytes()
-    except OSError:
-        return ""
-    if str(cale).lower().endswith(".png"):
-        mime = "image/png"
-    return f"data:{mime};base64,{base64.b64encode(data).decode()}"
+def img_uri(ref):
+    """Adresa unei poze (cloud sau locală), pentru <img src>."""
+    return stocare.url(ref)
 
 
-def poza(cale, inaltime=170):
-    if cale and Path(cale).exists():
-        h(f'<img class="sk-photo" src="{img_uri(cale)}" style="width:100%;height:{inaltime}px">')
+def poza(ref, inaltime=170):
+    src = img_uri(ref) if ref else ""
+    if src:
+        h(f'<img class="sk-photo" src="{src}" style="width:100%;height:{inaltime}px">')
 
 
 def alerta(text, tip="ai", icon="info"):
